@@ -5,210 +5,245 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Para Mi Eterno Amor</title>
     <style>
+        /* Fondo degradado romántico */
         body {
             margin: 0;
+            padding: 0;
             overflow: hidden;
-            background-color: #000;
-            color: #fff;
-            font-family: 'Georgia', serif;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            font-family: 'Georgia', serif;
         }
 
         canvas {
-            display: block;
             position: absolute;
             top: 0;
             left: 0;
+            width: 100%;
+            height: 100%;
             z-index: 1;
+            pointer-events: auto;
         }
 
+        /* Tarjeta de mensaje central */
         #ui {
             position: relative;
             z-index: 10;
             text-align: center;
-            pointer-events: none;
-            background: rgba(0, 0, 0, 0.55);
+            pointer-events: none; /* Permite tocar a través de la tarjeta para interactuar con el fondo */
+            background: rgba(255, 255, 255, 0.75);
             padding: 40px;
-            border-radius: 20px;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            max-width: 500px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+            border-radius: 24px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            max-width: 450px;
+            width: 80%;
+            box-shadow: 0 15px 35px rgba(233, 30, 99, 0.2);
         }
 
         h1 {
-            font-size: 3rem;
-            color: #ff3366;
+            font-size: 2.8rem;
+            color: #d81b60;
             margin: 0 0 15px 0;
-            text-shadow: 0 0 10px #ff3366, 0 0 20px #ff3366;
-            animation: glow 1.5s ease-in-out infinite alternate;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
         }
 
         p {
-            font-size: 1.5rem;
-            line-height: 1.5;
-            color: #ffcccc;
+            font-size: 1.4rem;
+            line-height: 1.6;
+            color: #4a148c;
             margin: 10px 0;
         }
 
         .firma {
             margin-top: 30px;
-            font-size: 1.1rem;
-            color: rgba(255, 204, 204, 0.7);
-        }
-
-        @keyframes glow {
-            from { text-shadow: 0 0 10px #ff3366, 0 0 20px #ff3366; }
-            to { text-shadow: 0 0 20px #ff3366, 0 0 30px #ff3366, 0 0 40px #ff3366; }
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #bc00dd;
+            letter-spacing: 2px;
         }
 
         @media (max-width: 768px) {
-            h1 { font-size: 2.2rem; }
-            p { font-size: 1.2rem; }
-            #ui { padding: 25px; max-width: 80%; }
+            h1 { font-size: 2.1rem; }
+            p { font-size: 1.1rem; }
+            #ui { padding: 25px; width: 85%; }
         }
     </style>
 </head>
 <body>
 
-    <canvas id="tunnel"></canvas>
+    <canvas id="canvasCorazones"></canvas>
 
     <div id="ui">
-        <h1>[Dayana Gabriela]</h1>
+        <h1>Dayana Gabriela</h1>
         <p>Mi amor por ti es un viaje infinito,<br>
-           Y cada latido de mi corazon te pertenece.</p>
+           y cada latido de mi corazón te pertenece.</p>
         <p>Te amo con toda mi alma.</p>
         <div class="firma">[K]</div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        let scene, camera, renderer, tube;
-        let t = 0; 
-        
-        // --- VELOCIDAD ULTRA LENTA ---
-        const velocidadViaje = 0.0002; 
+        const canvas = document.getElementById('canvasCorazones');
+        const ctx = canvas.getContext('2d');
 
-        const numPoints = 60;
-        const curveRadius = 12;
-        const tubeRadius = 2.0;
-        const tubeSegments = 150;
-        const radialSegments = 10;
+        let corazonesBase = [];
+        let particulasToque = [];
 
-        function init() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        // Ajustar el tamaño del lienzo
+        function ajustarCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', ajustarCanvas);
+        ajustarCanvas();
 
-            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('tunnel'), antialias: true });
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.setSize(window.innerWidth, window.innerHeight);
+        // Función matemática para dibujar un corazón en 2D de forma nativa
+        function dibujarCorazon(x, y, tamaño, color, opacidad) {
+            ctx.save();
+            ctx.globalAlpha = opacidad;
+            ctx.beginPath();
+            ctx.translate(x, y);
+            ctx.moveTo(0, 0);
+            
+            // Curvas Bezier para formar los dos lóbulos del corazón
+            ctx.bezierCurveTo(-tamaño / 2, -tamaño / 2, -tamaño, tamaño / 3, 0, tamaño);
+            ctx.bezierCurveTo(tamaño, tamaño / 3, tamaño / 2, -tamaño / 2, 0, 0);
+            
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.restore();
+        }
 
-            const points = [];
-            for (let i = 0; i <= numPoints; i++) {
-                points.push(new THREE.Vector3(
-                    i * curveRadius * 1.5, 
-                    Math.sin(i / 4) * curveRadius, 
-                    Math.cos(i / 4) * curveRadius
-                ));
+        // Clase para los corazones principales que flotan y rebotan
+        class CorazonFlotante {
+            constructor() {
+                this.reiniciar(true);
             }
-            const curve = new THREE.CatmullRomCurve3(points);
-            curve.closed = true;
 
-            const geometry = new THREE.TubeGeometry(curve, tubeSegments, tubeRadius, radialSegments, true);
+            reiniciar(inicioAleatorio = false) {
+                this.tamaño = Math.random() * 20 + 15;
+                this.x = Math.random() * canvas.width;
+                // Si está iniciando, los distribuye por la pantalla; si está reapareciendo, nacen abajo
+                this.y = inicioAleatorio ? Math.random() * canvas.height : canvas.height + this.tamaño;
+                this.velocidadX = (Math.random() - 0.5) * 1.5; // Movimiento suave lateral
+                this.velocidadY = -(Math.random() * 0.8 + 0.5); // Suben suavemente hacia arriba
+                this.opacidad = Math.random() * 0.4 + 0.4;
+                // Variaciones de tonos rojos y rosados hermosos
+                const tonos = ['#ff1744', '#f50057', '#ff4081', '#e91e63', '#ff80ab'];
+                this.color = tonos[Math.floor(Math.random() * tonos.length)];
+            }
 
-            const material = new THREE.ShaderMaterial({
-                uniforms: {
-                    time: { value: 0 },
-                    mouse: { value: new THREE.Vector2(0.5, 0.5) }
-                },
-                vertexShader: `
-                    varying vec2 vUv;
-                    void main() {
-                        vUv = uv;
-                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                    }
-                `,
-                fragmentShader: `
-                    uniform float time;
-                    uniform vec2 mouse;
-                    varying vec2 vUv;
+            actualizar() {
+                this.x += this.velocidadX;
+                this.y += this.velocidadY;
 
-                    float heartShape(vec2 st, float size, float pulse) {
-                        st = st * 2.0 - 1.0;
-                        st.y -= size * 0.12;
-                        float r = length(st) * 0.75;
-                        float a = atan(st.x, st.y) / 3.14159265;
-                        float d = 1.0 - (abs(a) * size * 0.25 + size * 0.35);
-                        d += pulse * 0.12;
-                        return 1.0 - smoothstep(d, d + 0.04, r);
-                    }
+                // Rebotar sutilmente en los bordes laterales
+                if (this.x - this.tamaño < 0 || this.x + this.tamaño > canvas.width) {
+                    this.velocidadX *= -1;
+                }
 
-                    void main() {
-                        vec2 st = fract(vUv * vec2(120.0, 10.0) + vec2(time * 0.15, 0.0));
-                        float pulse = sin(time * 4.0) * 0.5 + 0.5;
-                        float dMouse = length(vUv - mouse);
-                        float mouseInfluence = smoothstep(0.4, 0.0, dMouse);
-                        
-                        float heart = heartShape(st, 1.1, pulse);
-                        vec3 color = vec3(1.0, 0.15, 0.35) * (0.85 + 0.15 * pulse);
-                        color += vec3(0.4, 0.2, 1.0) * mouseInfluence;
+                // Si salen por completo por la parte superior, reaparecen abajo
+                if (this.y < -this.tamaño) {
+                    this.reiniciar(false);
+                }
+            }
 
-                        gl_FragColor = vec4(color * heart, heart * 0.95);
-                    }
-                `,
-                transparent: true,
-                side: THREE.BackSide,
+            dibujar() {
+                dibujarCorazon(this.x, this.y, this.tamaño, this.color, this.opacidad);
+            }
+        }
+
+        // Clase para los pequeños corazones mágicos que nacen al tocar/mover el mouse
+        class ParticulaCorazon {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.tamaño = Math.random() * 8 + 6;
+                // Expansión radial tipo explosión suave
+                const angulo = Math.random() * Math.PI * 2;
+                const fuerza = Math.random() * 3 + 1;
+                this.velocidadX = Math.cos(angulo) * fuerza;
+                this.velocidadY = Math.sin(angulo) * fuerza;
+                this.opacidad = 1;
+                this.vida = 1.0; 
+                this.desgaste = Math.random() * 0.02 + 0.015; // Ritmo al que desaparecen
+                this.color = '#ffffff'; // Corazones brillantes blancos/rosados muy claros
+            }
+
+            actualizar() {
+                this.x += this.velocidadX;
+                this.y += this.velocidadY;
+                this.opacidad -= this.desgaste;
+                if (this.opacidad < 0) this.opacidad = 0;
+            }
+
+            dibujar() {
+                dibujarCorazon(this.x, this.y, this.tamaño, this.color, this.opacidad);
+            }
+        }
+
+        // Inicializar la cantidad de corazones flotantes de fondo
+        const cantidadCorazones = 35;
+        for (let i = 0; i < cantidadCorazones; i++) {
+            corazonesBase.push(new CorazonFlotante());
+        }
+
+        // Eventos para interactuar con el tacto y mouse
+        function crearEfectoToque(clienteX, clienteY) {
+            // Añade múltiples mini corazones en la coordenada tocada
+            for (let i = 0; i < 4; i++) {
+                particulasToque.push(new ParticulaCorazon(clienteX, clienteY));
+            }
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            crearEfectoToque(e.clientX, e.clientY);
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                crearEfectoToque(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        });
+
+        window.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) {
+                crearEfectoToque(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        });
+
+        // Bucle principal de animación nativo (corre suave en cualquier dispositivo)
+        function animar() {
+            // Limpiar lienzo manteniendo el fondo degradado del CSS
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Manejar corazones de fondo
+            corazonesBase.forEach(corazon => {
+                corazon.actualizar();
+                corazon.dibujar();
             });
 
-            tube = new THREE.Mesh(geometry, material);
-            scene.add(tube);
-
-            window.addEventListener('resize', onWindowResize, false);
-            window.addEventListener('mousemove', onMouseMove, false);
-            window.addEventListener('touchmove', onTouchMove, false);
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            t += velocidadViaje; 
-
-            const posActual = tube.geometry.parameters.path.getPointAt(t % 1);
-            const posSiguiente = tube.geometry.parameters.path.getPointAt((t + 0.005) % 1);
-            
-            camera.position.set(posActual.x, posActual.y, posActual.z);
-            camera.lookAt(posSiguiente);
-
-            // Ritmo de animación interno de los corazones más suave
-            tube.material.uniforms.time.value += 0.008;
-
-            renderer.render(scene, camera);
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function onMouseMove(event) {
-            tube.material.uniforms.mouse.value.x = event.clientX / window.innerWidth;
-            tube.material.uniforms.mouse.value.y = 1.0 - (event.clientY / window.innerHeight);
-        }
-
-        function onTouchMove(event) {
-            if (event.touches.length > 0) {
-                tube.material.uniforms.mouse.value.x = event.touches[0].clientX / window.innerWidth;
-                tube.material.uniforms.mouse.value.y = 1.0 - (event.touches[0].clientY / window.innerHeight);
+            // 2. Manejar partículas interactivas
+            for (let i = particulasToque.length - 1; i >= 0; i--) {
+                const p = particulasToque[i];
+                p.actualizar();
+                p.dibujar();
+                
+                // Eliminar del arreglo si ya se desvaneció por completo
+                if (p.opacidad <= 0) {
+                    particulasToque.splice(i, 1);
+                }
             }
+
+            requestAnimationFrame(animar);
         }
 
-        init();
-        animate();
+        // Iniciar la animación
+        animar();
     </script>
 </body>
 </html>
