@@ -8,7 +8,7 @@
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #000; /* Fondo negro para que los corazones resalten */
+            background-color: #000;
             color: #fff;
             font-family: 'Georgia', serif;
             display: flex;
@@ -19,52 +19,58 @@
 
         canvas {
             display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
         }
 
         /* Capa de texto sobre el túnel */
         #ui {
-            position: absolute;
+            position: relative;
             z-index: 10;
             text-align: center;
-            pointer-events: none; /* Permite que los clics pasen al túnel */
-            background: rgba(0, 0, 0, 0.4);
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.55);
             padding: 40px;
             border-radius: 20px;
-            backdrop-filter: blur(5px); /* Efecto de vidrio esmerilado */
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            max-width: 500px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
         }
 
         h1 {
-            font-size: 3.5rem;
-            color: #ff3366; /* Rosa neón */
-            margin-bottom: 15px;
+            font-size: 3rem;
+            color: #ff3366;
+            margin: 0 0 15px 0;
             text-shadow: 0 0 10px #ff3366, 0 0 20px #ff3366;
             animation: glow 1.5s ease-in-out infinite alternate;
         }
 
         p {
-            font-size: 1.8rem;
-            line-height: 1.4;
+            font-size: 1.5rem;
+            line-height: 1.5;
             color: #ffcccc;
+            margin: 10px 0;
         }
 
         .firma {
             margin-top: 30px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: rgba(255, 204, 204, 0.7);
         }
 
-        /* Animación de brillo para el nombre */
         @keyframes glow {
             from { text-shadow: 0 0 10px #ff3366, 0 0 20px #ff3366; }
             to { text-shadow: 0 0 20px #ff3366, 0 0 30px #ff3366, 0 0 40px #ff3366; }
         }
 
-        /* Media query para móviles */
         @media (max-width: 768px) {
-            h1 { font-size: 2.5rem; }
-            p { font-size: 1.3rem; }
-            #ui { padding: 20px; max-width: 85%; }
+            h1 { font-size: 2.2rem; }
+            p { font-size: 1.2rem; }
+            #ui { padding: 25px; max-width: 80%; }
         }
     </style>
 </head>
@@ -73,63 +79,58 @@
     <canvas id="tunnel"></canvas>
 
     <div id="ui">
-        <!-- ¡CAMBIA ESTO! Pon el nombre de ella -->
-        <h1>[Dayana Gabriela]</h1>
+        <h1>[Nombre de tu Novia]</h1>
         
         <p>Mi amor por ti es un viaje infinito,<br>
            cada latido me lleva más cerca de ti.</p>
         <p>Te amo con toda mi alma.</p>
         
-        <!-- ¡CAMBIA ESTO! Pon tu nombre -->
-        <div class="firma">Con todo mi amor, [K]</div>
+        <div class="firma">Con todo mi amor, [Tu Nombre]</div>
     </div>
 
-    <!-- Incluimos la librería Three.js para los gráficos 3D -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // Configuración básica de Three.js
-        let scene, camera, renderer, p, tube;
-        let t = 0;
+        let scene, camera, renderer, tube;
+        let t = 0; 
+        
+        // --- CONTROL DE VELOCIDAD FIJO ---
+        // Ajusta este número si quieres que el viaje vaya más lento (ej. 0.0005) o más rápido
+        const velocidadViaje = 0.0008; 
 
-        // Parámetros de la curva del túnel
-        const numPoints = 100;
-        const curveRadius = 15;
-        const tubeRadius = 2.5;
-        const tubeSegments = 200;
-        const radialSegments = 12;
+        const numPoints = 60;
+        const curveRadius = 12;
+        const tubeRadius = 2.0;
+        const tubeSegments = 150;
+        const radialSegments = 10;
 
         function init() {
             scene = new THREE.Scene();
-            camera = new THREE.Camera();
-            camera.position.z = 100;
+            
+            // Reemplazamos la cámara genérica por una de perspectiva correcta para el efecto 3D
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-            // Motor de renderizado WebGL
             renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('tunnel'), antialias: true });
-            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limita los pixeles en pantallas ultra 4K para mejorar rendimiento
             renderer.setSize(window.innerWidth, window.innerHeight);
-
-            // 1. Definir la forma del túnel (un toroide estirado)
-            p = new THREE.Vector3();
-            p.set(0, 0, 0);
 
             const points = [];
             for (let i = 0; i <= numPoints; i++) {
-                points.push(new THREE.Vector3(i * curveRadius * 2, Math.sin(i / 10) * curveRadius, Math.cos(i / 10) * curveRadius));
+                points.push(new THREE.Vector3(
+                    i * curveRadius * 1.5, 
+                    Math.sin(i / 4) * curveRadius, 
+                    Math.cos(i / 4) * curveRadius
+                ));
             }
             const curve = new THREE.CatmullRomCurve3(points);
             curve.closed = true;
 
-            // 2. Crear la geometría del túnel
             const geometry = new THREE.TubeGeometry(curve, tubeSegments, tubeRadius, radialSegments, true);
 
-            // 3. Crear el material de los corazones usando Shaders (código que corre en la tarjeta de video)
             const material = new THREE.ShaderMaterial({
                 uniforms: {
                     time: { value: 0 },
-                    color: { value: new THREE.Color(0xff3366) }, // Color base de los corazones
-                    mouse: { value: new THREE.Vector2(0, 0) }
+                    mouse: { value: new THREE.Vector2(0.5, 0.5) }
                 },
-                // Vértices (posición de cada corazón)
                 vertexShader: `
                     varying vec2 vUv;
                     void main() {
@@ -137,78 +138,74 @@
                         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
                     }
                 `,
-                // Fragmentos (color y forma de cada corazón latiendo)
                 fragmentShader: `
                     uniform float time;
                     uniform vec2 mouse;
                     varying vec2 vUv;
 
-                    // Función para dibujar un corazón en 2D
                     float heartShape(vec2 st, float size, float pulse) {
                         st = st * 2.0 - 1.0;
-                        st.y -= size * 0.1;
-                        float r = length(st) * 0.8;
-                        float a = atan(st.x, st.y) / 3.14159;
-                        float d = 1.0 - (abs(a) * size * 0.2 + size * 0.3);
-                        
-                        // Efecto de latido: altera la forma y el brillo
-                        d += pulse * 0.15;
-                        
-                        return 1.0 - smoothstep(d, d + 0.05, r);
+                        st.y -= size * 0.12;
+                        float r = length(st) * 0.75;
+                        float a = atan(st.x, st.y) / 3.14159265;
+                        float d = 1.0 - (abs(a) * size * 0.25 + size * 0.35);
+                        d += pulse * 0.12;
+                        return 1.0 - smoothstep(d, d + 0.04, r);
                     }
 
                     void main() {
-                        // Repetir el patrón de corazones por todo el túnel
-                        vec2 st = fract(vUv * vec2(200.0, 15.0) + vec2(time * 0.2, 0.0));
+                        // Controla cuántos corazones se ven a lo largo y ancho del tubo
+                        vec2 st = fract(vUv * vec2(120.0, 10.0) + vec2(time * 0.15, 0.0));
                         
-                        // Calcular el latido principal
-                        float pulse = sin(time * 6.0) * 0.5 + 0.5;
+                        // Latido suave
+                        float pulse = sin(time * 4.0) * 0.5 + 0.5;
 
-                        // Efecto de interacción del mouse/dedo: altera el color y brillo localmente
-                        float dMouse = length(vUv - mouse) * 1.5;
-                        float mouseInfluence = smoothstep(0.6, 0.0, dMouse);
+                        // Interacción del toque/mouse
+                        float dMouse = length(vUv - mouse);
+                        float mouseInfluence = smoothstep(0.4, 0.0, dMouse);
                         
-                        // Generar el corazón latiendo
-                        float heart = heartShape(st, 1.2, pulse);
+                        float heart = heartShape(st, 1.1, pulse);
                         
-                        // Color y brillo neón
-                        vec3 color = vec3(1.0, 0.2, 0.4) * (0.8 + 0.2 * pulse); // Color base + latido
-                        color += vec3(0.3, 0.5, 1.0) * mouseInfluence; // Brillo azul por el mouse
+                        // Color neón principal (Rosa/Rojo mágico)
+                        vec3 color = vec3(1.0, 0.15, 0.35) * (0.85 + 0.15 * pulse);
+                        
+                        // Toque destellante al pasar el dedo o mouse
+                        color += vec3(0.4, 0.2, 1.0) * mouseInfluence;
 
-                        gl_FragColor = vec4(color * heart, heart * (0.9 + 0.1 * pulse));
+                        gl_FragColor = vec4(color * heart, heart * 0.95);
                     }
                 `,
                 transparent: true,
-                side: THREE.BackSide, // Ver el túnel desde adentro
+                side: THREE.BackSide,
             });
 
             tube = new THREE.Mesh(geometry, material);
             scene.add(tube);
 
-            // Eventos de mouse y tacto para interactuar
             window.addEventListener('resize', onWindowResize, false);
             window.addEventListener('mousemove', onMouseMove, false);
             window.addEventListener('touchmove', onTouchMove, false);
         }
 
-        // Animación continua
         function animate() {
             requestAnimationFrame(animate);
-            t += 0.003; // Velocidad del viaje
 
-            // Mover la cámara a través del túnel
-            const p1 = tube.geometry.parameters.path.getPointAt(t % 1);
-            const p2 = tube.geometry.parameters.path.getPointAt((t + 0.01) % 1);
-            camera.position.set(p1.x, p1.y, p1.z);
-            camera.lookAt(p2);
+            // Incremento de tiempo e interpolación fija para la cámara
+            t += velocidadViaje; 
 
-            // Actualizar el tiempo en el Shader
-            tube.material.uniforms.time.value = performance.now() * 0.001;
+            // Posicionar la cámara dentro del camino del tubo de forma segura
+            const posActual = tube.geometry.parameters.path.getPointAt(t % 1);
+            const posSiguiente = tube.geometry.parameters.path.getPointAt((t + 0.005) % 1);
+            
+            camera.position.set(posActual.x, posActual.y, posActual.z);
+            camera.lookAt(posSiguiente);
+
+            // Pasar el tiempo de renderizado de forma fluida a los corazones
+            tube.material.uniforms.time.value += 0.015;
 
             renderer.render(scene, camera);
         }
 
-        // Manejar eventos de interacción
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
@@ -227,7 +224,6 @@
             }
         }
 
-        // Iniciar todo
         init();
         animate();
     </script>
