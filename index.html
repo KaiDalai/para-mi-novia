@@ -2,118 +2,234 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Para Mi Amor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Para Mi Eterno Amor</title>
     <style>
-        /* Fondo y estilo general */
         body {
             margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #ffe6e6, #ffb3b3);
-            height: 100vh;
+            overflow: hidden;
+            background-color: #000; /* Fondo negro para que los corazones resalten */
+            color: #fff;
+            font-family: 'Georgia', serif;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden;
-            text-align: center;
+            height: 100vh;
         }
 
-        /* Contenedor del mensaje */
-        .contenedor {
+        canvas {
+            display: block;
+        }
+
+        /* Capa de texto sobre el túnel */
+        #ui {
+            position: absolute;
             z-index: 10;
-            background: rgba(255, 255, 255, 0.85);
-            padding: 30px;
+            text-align: center;
+            pointer-events: none; /* Permite que los clics pasen al túnel */
+            background: rgba(0, 0, 0, 0.4);
+            padding: 40px;
             border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            max-width: 80%;
+            backdrop-filter: blur(5px); /* Efecto de vidrio esmerilado */
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         h1 {
-            color: #d63031;
-            font-size: 2.5rem;
-            margin-bottom: 10px;
+            font-size: 3.5rem;
+            color: #ff3366; /* Rosa neón */
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px #ff3366, 0 0 20px #ff3366;
+            animation: glow 1.5s ease-in-out infinite alternate;
         }
 
         p {
-            color: #4d4d4d;
-            font-size: 1.5rem;
-            margin: 0;
+            font-size: 1.8rem;
+            line-height: 1.4;
+            color: #ffcccc;
         }
 
-        /* Animación del corazón latiendo */
-        .corazon-principal {
-            color: #e84393;
-            font-size: 5rem;
-            margin-top: 20px;
-            animation: latido 0.6s infinite alternate;
+        .firma {
+            margin-top: 30px;
+            font-size: 1.2rem;
+            color: rgba(255, 204, 204, 0.7);
         }
 
-        @keyframes latido {
-            0% { transform: scale(1); }
-            100% { transform: scale(1.2); }
+        /* Animación de brillo para el nombre */
+        @keyframes glow {
+            from { text-shadow: 0 0 10px #ff3366, 0 0 20px #ff3366; }
+            to { text-shadow: 0 0 20px #ff3366, 0 0 30px #ff3366, 0 0 40px #ff3366; }
         }
 
-        /* Estilo para los corazones flotantes de fondo */
-        .corazon-flotante {
-            position: absolute;
-            color: rgba(232, 67, 147, 0.6);
-            pointer-events: none;
-            animation: flotar 4s linear infinite;
-        }
-
-        @keyframes flotar {
-            0% {
-                transform: translateY(100vh) scale(0);
-                opacity: 1;
-            }
-            100% {
-                transform: translateY(-10vh) scale(1);
-                opacity: 0;
-            }
+        /* Media query para móviles */
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            p { font-size: 1.3rem; }
+            #ui { padding: 20px; max-width: 85%; }
         }
     </style>
 </head>
 <body>
 
-    <div class="contenedor">
-        <h1 id="nombre">¡Hola, [Su Nombre]!</h1>
-        <p>Quiero que sepas que te amo muchísimo ❤️</p>
-        <div class="corazon-principal">❤️</div>
+    <canvas id="tunnel"></canvas>
+
+    <div id="ui">
+        <!-- ¡CAMBIA ESTO! Pon el nombre de ella -->
+        <h1>[Dayana Gabriela]</h1>
+        
+        <p>Mi amor por ti es un viaje infinito,<br>
+           cada latido me lleva más cerca de ti.</p>
+        <p>Te amo con toda mi alma.</p>
+        
+        <!-- ¡CAMBIA ESTO! Pon tu nombre -->
+        <div class="firma">Con todo mi amor, [K]</div>
     </div>
 
+    <!-- Incluimos la librería Three.js para los gráficos 3D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // JavaScript para crear corazones latiendo y flotando por la pantalla
-        function crearCorazon() {
-            const corazon = document.createElement('div');
-            corazon.classList.add('corazon-flotante');
-            
-            // Icono del corazón
-            corazon.innerText = '❤️';
-            
-            // Posición horizontal aleatoria
-            corazon.style.left = Math.random() * 100 + 'vw';
-            
-            // Tamaño aleatorio para variedad
-            const tamaño = Math.random() * 20 + 10;
-            corazon.style.fontSize = tamaño + 'px';
-            
-            // Duración de la animación aleatoria
-            const duracion = Math.random() * 3 + 2;
-            corazon.style.animationDuration = duracion + 's';
-            
-            document.body.appendChild(corazon);
-            
-            // Eliminar el corazón después de que termine la animación
-            setTimeout(() => {
-                corazon.remove();
-            }, duracion * 1000);
+        // Configuración básica de Three.js
+        let scene, camera, renderer, p, tube;
+        let t = 0;
+
+        // Parámetros de la curva del túnel
+        const numPoints = 100;
+        const curveRadius = 15;
+        const tubeRadius = 2.5;
+        const tubeSegments = 200;
+        const radialSegments = 12;
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.Camera();
+            camera.position.z = 100;
+
+            // Motor de renderizado WebGL
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('tunnel'), antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            // 1. Definir la forma del túnel (un toroide estirado)
+            p = new THREE.Vector3();
+            p.set(0, 0, 0);
+
+            const points = [];
+            for (let i = 0; i <= numPoints; i++) {
+                points.push(new THREE.Vector3(i * curveRadius * 2, Math.sin(i / 10) * curveRadius, Math.cos(i / 10) * curveRadius));
+            }
+            const curve = new THREE.CatmullRomCurve3(points);
+            curve.closed = true;
+
+            // 2. Crear la geometría del túnel
+            const geometry = new THREE.TubeGeometry(curve, tubeSegments, tubeRadius, radialSegments, true);
+
+            // 3. Crear el material de los corazones usando Shaders (código que corre en la tarjeta de video)
+            const material = new THREE.ShaderMaterial({
+                uniforms: {
+                    time: { value: 0 },
+                    color: { value: new THREE.Color(0xff3366) }, // Color base de los corazones
+                    mouse: { value: new THREE.Vector2(0, 0) }
+                },
+                // Vértices (posición de cada corazón)
+                vertexShader: `
+                    varying vec2 vUv;
+                    void main() {
+                        vUv = uv;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                // Fragmentos (color y forma de cada corazón latiendo)
+                fragmentShader: `
+                    uniform float time;
+                    uniform vec2 mouse;
+                    varying vec2 vUv;
+
+                    // Función para dibujar un corazón en 2D
+                    float heartShape(vec2 st, float size, float pulse) {
+                        st = st * 2.0 - 1.0;
+                        st.y -= size * 0.1;
+                        float r = length(st) * 0.8;
+                        float a = atan(st.x, st.y) / 3.14159;
+                        float d = 1.0 - (abs(a) * size * 0.2 + size * 0.3);
+                        
+                        // Efecto de latido: altera la forma y el brillo
+                        d += pulse * 0.15;
+                        
+                        return 1.0 - smoothstep(d, d + 0.05, r);
+                    }
+
+                    void main() {
+                        // Repetir el patrón de corazones por todo el túnel
+                        vec2 st = fract(vUv * vec2(200.0, 15.0) + vec2(time * 0.2, 0.0));
+                        
+                        // Calcular el latido principal
+                        float pulse = sin(time * 6.0) * 0.5 + 0.5;
+
+                        // Efecto de interacción del mouse/dedo: altera el color y brillo localmente
+                        float dMouse = length(vUv - mouse) * 1.5;
+                        float mouseInfluence = smoothstep(0.6, 0.0, dMouse);
+                        
+                        // Generar el corazón latiendo
+                        float heart = heartShape(st, 1.2, pulse);
+                        
+                        // Color y brillo neón
+                        vec3 color = vec3(1.0, 0.2, 0.4) * (0.8 + 0.2 * pulse); // Color base + latido
+                        color += vec3(0.3, 0.5, 1.0) * mouseInfluence; // Brillo azul por el mouse
+
+                        gl_FragColor = vec4(color * heart, heart * (0.9 + 0.1 * pulse));
+                    }
+                `,
+                transparent: true,
+                side: THREE.BackSide, // Ver el túnel desde adentro
+            });
+
+            tube = new THREE.Mesh(geometry, material);
+            scene.add(tube);
+
+            // Eventos de mouse y tacto para interactuar
+            window.addEventListener('resize', onWindowResize, false);
+            window.addEventListener('mousemove', onMouseMove, false);
+            window.addEventListener('touchmove', onTouchMove, false);
         }
 
-        // Generar un corazón cada 300 milisegundos
-        setInterval(crearCorazon, 300);
-    </script>
+        // Animación continua
+        function animate() {
+            requestAnimationFrame(animate);
+            t += 0.003; // Velocidad del viaje
 
+            // Mover la cámara a través del túnel
+            const p1 = tube.geometry.parameters.path.getPointAt(t % 1);
+            const p2 = tube.geometry.parameters.path.getPointAt((t + 0.01) % 1);
+            camera.position.set(p1.x, p1.y, p1.z);
+            camera.lookAt(p2);
+
+            // Actualizar el tiempo en el Shader
+            tube.material.uniforms.time.value = performance.now() * 0.001;
+
+            renderer.render(scene, camera);
+        }
+
+        // Manejar eventos de interacción
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function onMouseMove(event) {
+            tube.material.uniforms.mouse.value.x = event.clientX / window.innerWidth;
+            tube.material.uniforms.mouse.value.y = 1.0 - (event.clientY / window.innerHeight);
+        }
+
+        function onTouchMove(event) {
+            if (event.touches.length > 0) {
+                tube.material.uniforms.mouse.value.x = event.touches[0].clientX / window.innerWidth;
+                tube.material.uniforms.mouse.value.y = 1.0 - (event.touches[0].clientY / window.innerHeight);
+            }
+        }
+
+        // Iniciar todo
+        init();
+        animate();
+    </script>
 </body>
 </html>
