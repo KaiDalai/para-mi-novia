@@ -25,7 +25,6 @@
             z-index: 1;
         }
 
-        /* Capa de texto sobre el túnel */
         #ui {
             position: relative;
             z-index: 10;
@@ -80,11 +79,9 @@
 
     <div id="ui">
         <h1>[Nombre de tu Novia]</h1>
-        
         <p>Mi amor por ti es un viaje infinito,<br>
            cada latido me lleva más cerca de ti.</p>
         <p>Te amo con toda mi alma.</p>
-        
         <div class="firma">Con todo mi amor, [Tu Nombre]</div>
     </div>
 
@@ -93,9 +90,8 @@
         let scene, camera, renderer, tube;
         let t = 0; 
         
-        // --- CONTROL DE VELOCIDAD FIJO ---
-        // Ajusta este número si quieres que el viaje vaya más lento (ej. 0.0005) o más rápido
-        const velocidadViaje = 0.0008; 
+        // --- VELOCIDAD ULTRA LENTA ---
+        const velocidadViaje = 0.0002; 
 
         const numPoints = 60;
         const curveRadius = 12;
@@ -105,12 +101,10 @@
 
         function init() {
             scene = new THREE.Scene();
-            
-            // Reemplazamos la cámara genérica por una de perspectiva correcta para el efecto 3D
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
 
             renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('tunnel'), antialias: true });
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limita los pixeles en pantallas ultra 4K para mejorar rendimiento
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.setSize(window.innerWidth, window.innerHeight);
 
             const points = [];
@@ -154,22 +148,13 @@
                     }
 
                     void main() {
-                        // Controla cuántos corazones se ven a lo largo y ancho del tubo
                         vec2 st = fract(vUv * vec2(120.0, 10.0) + vec2(time * 0.15, 0.0));
-                        
-                        // Latido suave
                         float pulse = sin(time * 4.0) * 0.5 + 0.5;
-
-                        // Interacción del toque/mouse
                         float dMouse = length(vUv - mouse);
                         float mouseInfluence = smoothstep(0.4, 0.0, dMouse);
                         
                         float heart = heartShape(st, 1.1, pulse);
-                        
-                        // Color neón principal (Rosa/Rojo mágico)
                         vec3 color = vec3(1.0, 0.15, 0.35) * (0.85 + 0.15 * pulse);
-                        
-                        // Toque destellante al pasar el dedo o mouse
                         color += vec3(0.4, 0.2, 1.0) * mouseInfluence;
 
                         gl_FragColor = vec4(color * heart, heart * 0.95);
@@ -190,18 +175,16 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // Incremento de tiempo e interpolación fija para la cámara
             t += velocidadViaje; 
 
-            // Posicionar la cámara dentro del camino del tubo de forma segura
             const posActual = tube.geometry.parameters.path.getPointAt(t % 1);
             const posSiguiente = tube.geometry.parameters.path.getPointAt((t + 0.005) % 1);
             
             camera.position.set(posActual.x, posActual.y, posActual.z);
             camera.lookAt(posSiguiente);
 
-            // Pasar el tiempo de renderizado de forma fluida a los corazones
-            tube.material.uniforms.time.value += 0.015;
+            // Ritmo de animación interno de los corazones más suave
+            tube.material.uniforms.time.value += 0.008;
 
             renderer.render(scene, camera);
         }
